@@ -1,0 +1,28 @@
+{
+  "name": "meteora-dlmm-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Screening, entry/exit evaluation, dan eksekusi posisi Meteora DLMM (dump-and-bounce fee capture strategy).",
+  "dependencies": {
+    "@meteora-ag/dlmm": "^1.0.0",
+    "@solana/web3.js": "^1.95.0",
+    "@solana/spl-token": "^0.4.0",
+    "bn.js": "^5.2.0",
+    "bs58": "^5.0.0",
+    "axios": "^1.7.0",
+    "dotenv": "^16.4.0"
+  },
+  "scripts": {
+    "screen": "node scripts/screen_pools.js",
+    "portfolio": "node scripts/check_portfolio.js",
+    "pool-detail": "node scripts/get_pool_detail.js",
+    "evaluate-entry": "node scripts/evaluate_entry.js",
+    "evaluate-exit": "node scripts/evaluate_exit.js",
+    "create-position": "node scripts/create_position.js",
+    "close-position": "node scripts/close_position.js",
+    "notify": "node scripts/notify_telegram.js",
+    "screening-cycle": "node scripts/run_screening_cycle.js",
+    "position-cycle": "node scripts/run_position_cycle.js",
+    "daily-review": "node scripts/run_daily_review.js"
+  }
+}

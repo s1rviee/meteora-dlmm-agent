@@ -1,0 +1,15 @@
+{
+  "max_positions": 6,
+  "max_sol_per_position": null,
+  "no_new_position_after_hour": 18,
+  "max_consecutive_losses": 3,
+  "cooldown_after_loss_hours": 2,
+  "entry_drawdown_pct_min": 40,
+  "entry_drawdown_pct_max": 60,
+  "exit_bounce_pct_min": 15,
+  "exit_bounce_pct_max": 25,
+  "bin_count_options": [80, 100, 125],
+  "default_bin_count": 100,
+  "position_range_pct_min": 86,
+  "position_range_pct_max": 94
+}
