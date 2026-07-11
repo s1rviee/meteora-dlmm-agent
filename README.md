@@ -260,6 +260,6 @@ If you want to use this commercially, reach out first.
 
 ## 👤 Author
 
-Built by **[S1rvie](https://github.com/S1rvie)**
+Built by **[S1rvie](https://github.com/s1rviee)**
 
 💬 Discord: [Meteora Indonesia](https://discord.gg/meteoraidn)
