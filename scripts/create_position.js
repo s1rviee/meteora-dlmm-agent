@@ -16,17 +16,34 @@ const { StrategyType } = require("@meteora-ag/dlmm");
 const fs = require("fs");
 const path = require("path");
 
+/**
+ * Ambil jam saat ini di timezone yang dikonfigurasi (config/risk_limits.json -> "timezone"),
+ * BUKAN jam lokal server/VPS. Ini penting karena VPS bisa di-host di region mana pun —
+ * aturan "no trade after jam X" harus konsisten terhadap timezone yang kamu tentukan, bukan tempat VPS berada.
+ */
+function getHourInTimezone(timezone) {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hour: "numeric",
+    hour12: false,
+  });
+  const hourStr = formatter.format(new Date());
+  return Number(hourStr === "24" ? "0" : hourStr);
+}
+
 async function checkRiskLimits(connection, wallet) {
   const riskLimitsPath = path.join(__dirname, "..", "config", "risk_limits.json");
   const riskLimits = JSON.parse(fs.readFileSync(riskLimitsPath, "utf-8"));
 
-  const now = new Date();
-  const hour = now.getHours(); // NOTE: pastikan server timezone sesuai user, atau pass timezone eksplisit
+  const timezone = riskLimits.timezone || "Asia/Jakarta";
+  const hour = getHourInTimezone(timezone);
   if (hour >= riskLimits.no_new_position_after_hour) {
     throw new Error(
-      `Blocked oleh risk limit: sudah lewat jam ${riskLimits.no_new_position_after_hour}:00, tidak boleh buka posisi baru.`
+      `Blocked oleh risk limit: sudah jam ${hour}:00 di ${timezone} (cutoff jam ${riskLimits.no_new_position_after_hour}:00), tidak boleh buka posisi baru.`
     );
   }
+
+  const now = new Date();
 
   const historyPath = path.join(__dirname, "..", "config", "position_history.json");
   const history = fs.existsSync(historyPath)
@@ -81,10 +98,10 @@ async function main() {
   const connection = new Connection(process.env.HELIUS_RPC_URL, "confirmed");
   const wallet = Keypair.fromSecretKey(bs58.decode(process.env.WALLET_PRIVATE_KEY));
 
-  const { historyPath, history } = await checkRiskLimits(connection, wallet);
+  const { riskLimits, historyPath, history } = await checkRiskLimits(connection, wallet);
 
   const solAmountLamports = new BN(Number(solAmountStr) * 1e9);
-  const binCount = Number(binCountStr) || 100; // default 100, opsi 80/100/125
+  const binCount = Number(binCountStr) || riskLimits.default_bin_count || 100;
   const strategyType =
     (strategyArg || "spot").toLowerCase() === "bidask" ? StrategyType.BidAsk : StrategyType.Spot;
 
@@ -108,16 +125,6 @@ async function main() {
     wallet,
     newPositionKeypair,
   ]);
-
-  // Simpan pool address ke known_pools.json supaya kedeteksi di check_portfolio.js
-  const knownPoolsPath = path.join(__dirname, "..", "config", "known_pools.json");
-  const knownPools = fs.existsSync(knownPoolsPath)
-    ? JSON.parse(fs.readFileSync(knownPoolsPath, "utf-8"))
-    : [];
-  if (!knownPools.includes(poolAddress)) {
-    knownPools.push(poolAddress);
-    fs.writeFileSync(knownPoolsPath, JSON.stringify(knownPools, null, 2));
-  }
 
   // Simpan entry ke position_history.json — ini yang dibaca evaluate_exit.js (openTimestamp)
   // dan checkRiskLimits (consecutive losses, max positions) di run berikutnya.
