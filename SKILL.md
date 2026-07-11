@@ -16,9 +16,9 @@ Agent untuk screening pool, membuka/menutup posisi liquidity Meteora DLMM di Sol
 
 ## State files (dikelola otomatis oleh skill, jangan diedit manual saat agent jalan)
 
-- `config/known_pools.json` — daftar pool address yang pernah dibuka posisinya
 - `config/position_history.json` — **sumber kebenaran utama**: setiap create/close position tercatat di sini (openTimestamp, closeTimestamp, pnlSol, status open/closed/partial). Dipakai oleh `check_portfolio.js` (hitung slot tersisa + consecutive losses), `create_position.js` (enforce kill-switch), dan `evaluate_exit.js` (auto-lookup openTimestamp by positionAddress, tidak perlu input manual)
-- Copy `assets/*.example.json` ke `config/*.json` saat setup pertama kali (isi `[]` untuk history/known_pools yang masih kosong)
+- `config/telegram_topics.json` — mapping topic Telegram → `message_thread_id` (lihat references/telegram_integration.md)
+- Copy `assets/*.example.json` ke `config/*.json` saat setup pertama kali (isi `[]` untuk `position_history.json` yang masih kosong)
 
 ## Alur kerja tingkat tinggi
 
@@ -54,15 +54,17 @@ Baca `references/` sesuai kebutuhan — jangan load semua sekaligus ke context, 
 
 1. Install dependencies: `npm install @meteora-ag/dlmm @solana/web3.js @solana/spl-token dotenv axios`
 2. Install `gmgn-cli` global: `npm install -g gmgn-cli` — semua akses data GMGN (screening, kline, buy/sell ratio) lewat CLI ini, BUKAN curl/axios langsung ke gmgn.ai (situsnya butuh login, lihat references/api_reference.md)
-3. Setup `GMGN_API_KEY` di `~/.config/gmgn/.env` — proses ini WAJIB dikonfirmasi & dijalankan sendiri oleh user (generate keypair, daftar di gmgn.ai/ai), jangan dieksekusi otomatis oleh Claude tanpa user secara eksplisit minta
-4. Isi `.env` (lihat `assets/.env.example`) — `HELIUS_API_KEY`, `HELIUS_RPC_URL`, `WALLET_PRIVATE_KEY`
-5. Set `config/risk_limits.json` (copy dari `assets/risk_limits.example.json`) sesuai ukuran portofolio user
-6. Konfirmasi ke user bahwa wallet yang dipakai adalah **dedicated hot wallet** dengan dana terbatas, bukan wallet utama — ini best practice untuk auto-sign bot, bukan hal opsional untuk diskip
+3. Setup `GMGN_API_KEY` di `~/.config/gmgn/.env` (config global CLI, **bukan** `.env` skill ini) — proses ini WAJIB dikonfirmasi & dijalankan sendiri oleh user (generate keypair, daftar di gmgn.ai/ai), jangan dieksekusi otomatis oleh Claude tanpa user secara eksplisit minta
+4. Isi `.env` skill ini (lihat `assets/.env.example`) — `HELIUS_RPC_URL`, `WALLET_PRIVATE_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
+5. `mkdir -p config` lalu copy semua template: `cp assets/risk_limits.example.json config/risk_limits.json`, `cp assets/position_history.example.json config/position_history.json`, `cp assets/telegram_topics.example.json config/telegram_topics.json`
+6. Set `config/risk_limits.json` sesuai ukuran portofolio user — termasuk field `"timezone"` (misal `"Asia/Jakarta"`), dipakai buat enforce jam trading cutoff secara konsisten terlepas dari timezone VPS/server tempat skill ini jalan
+7. Setup topic Telegram dulu (lihat `docs/telegram-topic-setup-prompt.md` di root repo) sebelum isi `config/telegram_topics.json` dengan `message_thread_id` yang benar — kalau belum diisi, notifikasi akan gagal silent (di-log ke console, tidak menghentikan proses)
+8. Konfirmasi ke user bahwa wallet yang dipakai adalah **dedicated hot wallet** dengan dana terbatas, bukan wallet utama — ini best practice untuk auto-sign bot, bukan hal opsional untuk diskip
 
 ## Prinsip eksekusi untuk Claude saat menjalankan skill ini
 
 - Selalu jalankan `check_portfolio.js` dulu sebelum create position baru, untuk tahu berapa slot posisi yang masih tersedia (max 6, lihat risk_management.md)
-- Jangan buka posisi baru jika waktu lokal user sudah lewat jam 18:00 (cek dengan `user_time_v0` tool, convert ke timezone user)
+- Jam trading cutoff (default jam 18:00) dihitung dari field `"timezone"` di `config/risk_limits.json`, BUKAN dari jam lokal server/VPS — ini sudah di-enforce otomatis di dalam `create_position.js`, jangan bypass logic ini secara manual
 - Saat entry signal dan exit signal sama-sama belum confluence (belum 2 kondisi terpenuhi), JANGAN eksekusi — laporkan status "menunggu konfirmasi" ke user
 - Setelah setiap create/close position, laporkan hasil transaksi (tx signature, jumlah SOL, fee yang di-claim) ke user secara ringkas
 - Jika ada kegagalan transaksi (slippage, insufficient balance, dll), jangan retry otomatis berkali-kali — laporkan error ke user dan tunggu instruksi
