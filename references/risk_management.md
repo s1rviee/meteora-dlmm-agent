@@ -8,7 +8,8 @@ Semua aturan ini WAJIB dicek sebelum create position baru — jangan pernah bypa
 - Reward system: kalau 1 hari penuh tanpa loss, boleh naikkan ukuran posisi untuk hari berikutnya (manual adjustment oleh user, bukan otomatis oleh skill)
 
 ## Waktu Trading
-- TIDAK buka posisi baru setelah jam 18:00 waktu lokal user (cek pakai `user_time_v0`, convert ke timezone user)
+- TIDAK buka posisi baru setelah jam 18:00 (default) di timezone yang dikonfigurasi lewat field `"timezone"` di `config/risk_limits.json` (misal `"Asia/Jakarta"`)
+- Ini dihitung pakai `Intl.DateTimeFormat` dengan timezone eksplisit dari config, **bukan** jam lokal sistem/VPS — jadi hasilnya konsisten mau VPS-nya di-host di region mana pun
 - Posisi yang sudah terbuka sebelum jam 18:00 boleh terus dimonitor/exit kapan saja
 
 ## Kill-Switch
@@ -27,6 +28,7 @@ Semua aturan ini WAJIB dicek sebelum create position baru — jangan pernah bypa
 ## Contoh config (assets/risk_limits.example.json)
 ```json
 {
+  "timezone": "Asia/Jakarta",
   "max_positions": 6,
   "max_sol_per_position": null,
   "no_new_position_after_hour": 18,
@@ -39,3 +41,4 @@ Semua aturan ini WAJIB dicek sebelum create position baru — jangan pernah bypa
 }
 ```
 `max_sol_per_position: null` berarti dihitung otomatis dari total portfolio balance / max_positions saat runtime.
+`timezone` menerima format IANA timezone (misal `"Asia/Jakarta"`, `"UTC"`, `"America/New_York"`) — ini yang dipakai buat enforce jam trading cutoff, independen dari timezone server/VPS.
