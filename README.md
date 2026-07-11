@@ -119,18 +119,19 @@ nano .env
 ```
 
 Fill in:
-- `HELIUS_API_KEY` / `HELIUS_RPC_URL` — [dashboard.helius.dev](https://dashboard.helius.dev)
+- `HELIUS_RPC_URL` — [dashboard.helius.dev](https://dashboard.helius.dev) (API key is already embedded in the URL)
 - `WALLET_PRIVATE_KEY` — **dedicated hot wallet only**, base58 format
-- `GMGN_API_KEY` — from step 2
 - `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` — from [@BotFather](https://t.me/BotFather) and your supergroup
+
+> `GMGN_API_KEY` is **not** set here — `gmgn-cli` reads its own auth from `~/.config/gmgn/.env` (global CLI config, set up in step 2), separate from this skill's `.env`.
 
 ### 5. Configure risk limits
 
 ```bash
 mkdir -p config
 cp assets/risk_limits.example.json config/risk_limits.json
-cp assets/known_pools.example.json config/known_pools.json
 cp assets/position_history.example.json config/position_history.json
+cp assets/telegram_topics.example.json config/telegram_topics.json
 ```
 
 Edit `config/risk_limits.json` to match your portfolio size — see [`references/risk_management.md`](./references/risk_management.md) for what each field does.
