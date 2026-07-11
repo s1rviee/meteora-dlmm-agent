@@ -31,9 +31,13 @@
 
 ## Urutan Eksekusi Screening
 
+**Untuk cron/scheduled run:** panggil `scripts/run_screening_cycle.js` — ini sudah membungkus seluruh alur di bawah (step 1-4) DAN lanjut ke evaluate entry + create position + notify Telegram dalam 1 command. Ini yang dipakai di cron Hermes (lihat SKILL.md).
+
+**Alur internal (dipanggil otomatis oleh `run_screening_cycle.js`, atau bisa dijalankan manual satu-satu untuk debugging):**
+
 1. Jalankan `scripts/screen_pools.js` — ambil daftar token dari GMGN sesuai filter dasar + keamanan
 2. Untuk setiap token yang lolos, cek apakah ada pool DLMM di Meteora (`scripts/get_pool_detail.js`)
 3. Filter lagi berdasarkan fee/TVL dan volume pool
-4. Return daftar kandidat final ke user / ke tahap evaluate_entry
+4. Return daftar kandidat final → lanjut ke `scripts/evaluate_entry.js` (dicek drawdown % + buy/sell ratio, lihat `strategy.md`)
 
 Jangan skip tahap 1 (GMGN) meskipun user hanya minta "screening pool Meteora" — keamanan token tetap harus dicek dulu sebelum masuk likuiditas, karena rug token = kehilangan modal LP, bukan cuma token.
