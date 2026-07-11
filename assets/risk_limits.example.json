@@ -1,4 +1,5 @@
 {
+  "timezone": "Asia/Jakarta",
   "max_positions": 6,
   "max_sol_per_position": null,
   "no_new_position_after_hour": 18,
